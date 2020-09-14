@@ -11,8 +11,7 @@ import gzip
 import csv
 
 import logging
-
-
+ 
 class WebGraph():
 
     def __init__(self, filename, max_nnz=None, filter_ratio=None):
@@ -101,10 +100,13 @@ class WebGraph():
 
         if query is None:
             v = torch.ones(n)
-
         else:
             v = torch.zeros(n)
-            # FIXME: your code goes here
+            
+            for i in range(n):
+                url = self._index_to_url(i)
+                if url_satisfies_query(url,query):
+                    v[i]=1
         
         v_sum = torch.sum(v)
         assert(v_sum>0)
@@ -134,10 +136,37 @@ class WebGraph():
             x0 /= torch.norm(x0)
 
             # main loop
-            # FIXME: your code goes here
-            x = x0.squeeze()
+            x = x0
+            # vector of all zeroes
+            a = torch.zeros(n)
 
-            return x
+            # vector where each component of the vector is the sum of its rows
+            rowSums = torch.sparse.sum(self.P,1)
+            for i in range(n):
+                # if the row of P is zero, we change the value to 1
+                if rowSums[i] == 0:
+                    a[i] = 1
+                else:
+                    a[i] = 0
+
+            for k in range (0, max_iterations):
+                xPrev = xCurrent
+                
+                alphaTranspose = xPrev.t() * alpha
+
+                scalar = alphaTranspose * a + (1-alpha)
+                x = scalar*v.t()
+
+                y = torch.sparse.mm(self.P.t(), alphaTranspose.t()).t()
+
+                #composing formula 5.1 where x is the rhs of the equation and y is the lhs of the equation
+                xCurrent = (x + y).t()
+
+                #check epsilon condition
+                if torch.norm(xCurrent - xPrev) < epsilon:
+                    break
+
+            return x.squeeze()
 
 
     def search(self, pi, query='', max_results=10):
