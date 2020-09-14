@@ -102,7 +102,7 @@ class WebGraph():
             v = torch.ones(n)
         else:
             v = torch.zeros(n)
-            
+
             for i in range(n):
                 url = self._index_to_url(i)
                 if url_satisfies_query(url,query):
@@ -137,6 +137,7 @@ class WebGraph():
 
             # main loop
             x = x0
+            
             # vector of all zeroes
             a = torch.zeros(n)
 
